@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 短剧作品展 · Langbot</title>
+<style>
+  :root {
+    --bg: #0b0b10;
+    --bg2: #14141c;
+    --card: #17171f;
+    --text: #f2f2f5;
+    --muted: #9a9aa8;
+    --accent: #e8b34b;
+    --accent2: #7c5cff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    min-height: 100vh;
+  }
+  .hero {
+    padding: 72px 24px 40px;
+    text-align: center;
+    background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,92,255,.25), transparent),
+                radial-gradient(ellipse 60% 50% at 50% 110%, rgba(232,179,75,.12), transparent);
+  }
+  .hero .kicker {
+    color: var(--accent);
+    letter-spacing: .35em;
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .hero h1 {
+    font-size: clamp(30px, 6vw, 52px);
+    font-weight: 800;
+    letter-spacing: .06em;
+    margin-bottom: 12px;
+  }
+  .hero p { color: var(--muted); font-size: 15px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 22px;
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,.06);
+    transition: transform .25s ease, box-shadow .25s ease;
+  }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,.5); }
+  .card .thumb { position: relative; aspect-ratio: 9 / 14; background: #000; overflow: hidden; }
+  .card video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .card .play {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,.18); transition: background .2s;
+  }
+  .card:hover .play { background: rgba(0,0,0,.05); }
+  .card .play::after {
+    content: ""; width: 54px; height: 54px; border-radius: 50%;
+    background: rgba(232,179,75,.92);
+    -webkit-mask: none;
+    clip-path: polygon(38% 30%, 38% 70%, 68% 50%);
+  }
+  .card .meta { padding: 14px 16px 16px; }
+  .card .tag {
+    display: inline-block; font-size: 11px; color: var(--accent);
+    border: 1px solid rgba(232,179,75,.4); border-radius: 20px;
+    padding: 2px 10px; margin-bottom: 8px; letter-spacing: .1em;
+  }
+  .card h3 { font-size: 16px; margin-bottom: 6px; }
+  .card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding: 36px 20px 48px; }
+  .modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 50;
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal.open { display: flex; }
+  .modal video { max-height: 88vh; max-width: 100%; border-radius: 12px; background: #000; }
+  .modal .close {
+    position: absolute; top: 18px; right: 22px; font-size: 30px; color: #fff;
+    cursor: pointer; opacity: .7; line-height: 1;
+  }
+  .modal .close:hover { opacity: 1; }
+  .modal .caption { position: absolute; bottom: 22px; left: 0; right: 0; text-align: center; color: #ddd; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="kicker">AI SHORT DRAMA</div>
+  <h1>AI 短剧作品展</h1>
+  <p>竖屏短剧 · 全部由 AI 生成 · 点击卡片播放</p>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<footer>Langbot · AI 短剧作品展示页 · 视频文件放在仓库 videos/ 目录下</footer>
+
+<div class="modal" id="modal">
+  <div class="close" id="closeBtn">&times;</div>
+  <video id="player" controls playsinline></video>
+  <div class="caption" id="caption"></div>
+</div>
+
+<script>
+const works = [
+  { file: "videos/xianxia.mp4",        tag: "国风仙侠", title: "暗黑国风仙侠", desc: "云雾悬崖之巅，灵光凝聚成仙，白衣仗剑，气场拉满。" },
+  { file: "videos/transformation.mp4", tag: "特效变身", title: "华丽变身", desc: "街头转身，金色粒子炸开，次元壁破裂，华丽登场。" },
+  { file: "videos/lobby-romance.mp4",  tag: "都市爱情", title: "大堂不夜城", desc: "深夜奢华大堂，房卡掉落，抬眸对视，时间静止。" },
+  { file: "videos/nailong-garfield.mp4", tag: "搞笑短剧", title: "奶龙 × 加菲猫", desc: "奶龙穿西装捡房卡，加菲猫穿晚礼服，浪漫又离谱。" },
+  { file: "videos/korean-acting.mp4",  tag: "演技挑战", title: "韩式演技挑战", desc: "冷蓝调电影感，过肩对峙，傲慢与嘲讽拉满。" },
+  { file: "videos/seoul-dv.mp4",       tag: "生活记录", title: "首尔夏日 DV", desc: "2000 年代 DV 质感，首尔小巷，买水果，逗小狗。" },
+  { file: "videos/bus-stop.mp4",       tag: "情绪短片", title: "雨后公交站", desc: "一镜到底，等车、发现镜头、忍笑，情绪缓缓流动。" },
+  { file: "videos/starry-night.mp4",   tag: "艺术漫游", title: "梵高星空漫游", desc: "第一人称走进《星空》油画，旋转星云，村庄灯火。" },
+];
+
+const grid = document.getElementById("grid");
+works.forEach(w => {
+  const el = document.createElement("div");
+  el.className = "card";
+  el.innerHTML =
+    '<div class="thumb"><video src="' + w.file + '" preload="metadata" muted playsinline></video><div class="play"></div></div>' +
+    '<div class="meta"><span class="tag">' + w.tag + '</span><h3>' + w.title + '</h3><p>' + w.desc + '</p></div>';
+  el.onclick = () => openModal(w);
+  grid.appendChild(el);
+});
+
+const modal = document.getElementById("modal");
+const player = document.getElementById("player");
+const caption = document.getElementById("caption");
+function openModal(w) {
+  player.src = w.file;
+  caption.textContent = w.title + " · " + w.tag;
+  modal.classList.add("open");
+  player.play().catch(() => {});
+}
+function closeModal() {
+  player.pause();
+  player.removeAttribute("src");
+  player.load();
+  modal.classList.remove("open");
+}
+document.getElementById("closeBtn").onclick = closeModal;
+modal.addEventListener("click", e => { if (e.target === modal) closeModal(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+</script>
+</body>
+</html>
